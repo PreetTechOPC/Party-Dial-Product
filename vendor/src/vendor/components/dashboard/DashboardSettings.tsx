@@ -10,7 +10,7 @@ import {
   Sparkles, Building2, Users, Wind, Car, Wifi, Utensils, Music, 
   Image as ImageIcon, CheckCircle2, IndianRupee,
   Plus, Zap, Trees, ChefHat,
-  Palette, Heart, ShieldCheck, Building, Trash2, Target, Camera, Video, PlayCircle
+  Palette, Heart, ShieldCheck, Building, Trash2, Target, Camera, Video, PlayCircle, Clock, X
 } from 'lucide-react';
 import Image from 'next/image';
 
@@ -286,6 +286,35 @@ const DashboardSettings = ({
                    <ChevronRight size={16} className={`transition-transform ${settingsSection === section.id ? 'opacity-100' : 'opacity-0 -translate-x-2'}`} />
                 </button>
              ))}
+             {venueProfile?.status && (
+               <div className={`mt-4 shrink-0 flex items-center gap-3 px-5 py-2.5 rounded-2xl border shadow-sm transition-all ${
+                  venueProfile.status === 'approved' ? 'bg-emerald-50 border-emerald-200 shadow-emerald-500/10' :
+                  venueProfile.status === 'rejected' ? 'bg-rose-50 border-rose-200 shadow-rose-500/10' :
+                  'bg-amber-50 border-amber-200 shadow-amber-500/10'
+               }`}>
+                  <div className="flex items-center justify-center">
+                     {venueProfile.status === 'approved' ? <ShieldCheck size={22} className="text-emerald-600" strokeWidth={2.5} /> :
+                      venueProfile.status === 'rejected' ? <X size={22} className="text-rose-600" strokeWidth={2.5} /> :
+                      <Clock size={22} className="text-amber-600" strokeWidth={2.5} />}
+                  </div>
+                  <div className="flex flex-col justify-center">
+                     <span className={`text-[9px] font-black uppercase tracking-[0.2em] leading-none mb-1.5 ${
+                        venueProfile.status === 'approved' ? 'text-emerald-600/70' :
+                        venueProfile.status === 'rejected' ? 'text-rose-600/70' :
+                        'text-amber-600/70'
+                     }`}>
+                        Listing Status
+                     </span>
+                     <span className={`text-[13px] font-black uppercase tracking-wider leading-none ${
+                        venueProfile.status === 'approved' ? 'text-emerald-700' :
+                        venueProfile.status === 'rejected' ? 'text-rose-700' :
+                        'text-amber-700'
+                     }`}>
+                        {venueProfile.status} Profile
+                     </span>
+                  </div>
+               </div>
+             )}
           </aside>
 
           {/* Content Area */}

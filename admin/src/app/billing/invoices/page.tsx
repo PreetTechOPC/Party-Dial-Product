@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Receipt, 
@@ -15,7 +16,7 @@ import {
   X,
   Trash2,
   Check
-} from "lucide-react";
+, Plus} from "lucide-react";
 import { cn } from "@/lib/utils";
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -39,17 +40,25 @@ export default function InvoicesPage() {
       if (result.status === "success") {
         const mapped = (result.data || [])
           .filter((p: any) => p.method !== 'quote' && p.invoiceNumber)
-          .map((p: any) => ({
-            docId: p.$id,
-            id: p.invoiceNumber,
-            client: p.venueName || p.ownerEmail || "Private Client",
-            event: p.planName || "Venue Subscription",
-            amount: p.amount || 0,
-            date: p.paidAt ? new Date(p.paidAt).toISOString().split('T')[0] : "—",
-            status: p.status === 'captured' ? 'Paid' : p.status === 'failed' ? 'Failed' : 'Pending',
-            due: p.paidAt ? new Date(new Date(p.paidAt).setDate(new Date(p.paidAt).getDate() + 5)).toISOString().split('T')[0] : "—",
-            fileId: p.invoiceFileId || null,
-          }));
+          .map((p: any) => {
+            let parsedBilling = null;
+            try {
+              if (p.billingDetails) parsedBilling = JSON.parse(p.billingDetails);
+            } catch(e) {}
+            return {
+              docId: p.$id,
+              id: p.invoiceNumber,
+              client: p.venueName || p.ownerEmail || "Private Client",
+              event: p.planName || "Venue Subscription",
+              amount: p.amount || 0,
+              date: p.paidAt ? new Date(p.paidAt).toISOString().split('T')[0] : "—",
+              status: (p.status === 'captured' || p.status === 'paid') ? 'Paid' : p.status === 'failed' ? 'Failed' : 'Pending',
+              due: p.paidAt ? new Date(new Date(p.paidAt).setDate(new Date(p.paidAt).getDate() + 5)).toISOString().split('T')[0] : "—",
+              fileId: p.invoiceFileId || null,
+              billingDetails: parsedBilling,
+              paymentMethod: p.method || "Online"
+            };
+          });
         setInvoices(mapped);
       }
     } catch (err) {
@@ -68,13 +77,29 @@ export default function InvoicesPage() {
     i.id.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const numberToWords = (num: number): string => {
+    const a = ['','One ','Two ','Three ','Four ', 'Five ','Six ','Seven ','Eight ','Nine ','Ten ','Eleven ','Twelve ','Thirteen ','Fourteen ','Fifteen ','Sixteen ','Seventeen ','Eighteen ','Nineteen '];
+    const b = ['', '', 'Twenty','Thirty','Forty','Fifty', 'Sixty','Seventy','Eighty','Ninety'];
+    const numStr = num.toString();
+    if (numStr.length > 9) return 'overflow';
+    let n = ('000000000' + numStr).slice(-9).match(/^(\d{2})(\d{2})(\d{2})(\d{1})(\d{2})$/);
+    if (!n) return ''; 
+    let str = '';
+    str += (Number(n[1]) != 0) ? (a[Number(n[1])] || b[Number(n[1][0])] + ' ' + a[Number(n[1][1])]) + 'Crore ' : '';
+    str += (Number(n[2]) != 0) ? (a[Number(n[2])] || b[Number(n[2][0])] + ' ' + a[Number(n[2][1])]) + 'Lakh ' : '';
+    str += (Number(n[3]) != 0) ? (a[Number(n[3])] || b[Number(n[3][0])] + ' ' + a[Number(n[3][1])]) + 'Thousand ' : '';
+    str += (Number(n[4]) != 0) ? (a[Number(n[4])] || b[Number(n[4][0])] + ' ' + a[Number(n[4][1])]) + 'Hundred ' : '';
+    str += (Number(n[5]) != 0) ? ((str != '') ? 'and ' : '') + (a[Number(n[5])] || b[Number(n[5][0])] + ' ' + a[Number(n[5][1])]) + 'Only' : 'Only';
+    return str.trim();
+  };
+
   const downloadPDF = async (inv: any) => {
     const doc = new jsPDF({ orientation: 'p', unit: 'pt', format: 'a4' });
     const pageWidth = doc.internal.pageSize.getWidth();
     
     // 1. Fetch and add Logo
     try {
-      const res = await fetch('/logo-nav.png');
+      const res = await fetch(`/preet-logo.png?v=${Date.now()}`); 
       const blob = await res.blob();
       const base64 = await new Promise<string>((resolve, reject) => {
         const reader = new FileReader();
@@ -82,102 +107,220 @@ export default function InvoicesPage() {
         reader.onerror = reject;
         reader.readAsDataURL(blob);
       });
-      doc.addImage(base64, 'PNG', 40, 30, 80, 80);
+      doc.addImage(base64, 'PNG', 40, 30, 100, 30);
     } catch (e) {
-      console.log("Could not load logo", e);
       doc.setFont("helvetica", "bold");
       doc.setFontSize(24);
-      doc.setTextColor(236, 72, 153);
-      doc.text("PartyDial", 40, 65);
+      doc.setTextColor(59, 130, 246);
+      doc.text("PREET", 40, 50);
+      doc.setFontSize(12);
+      doc.setTextColor(30, 41, 59);
+      doc.text("TECH", 120, 50);
     }
 
-    // 2. Invoice Title & Meta Box
+    // Top Right Details
+    doc.setFontSize(10);
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(22);
     doc.setTextColor(30, 41, 59);
-    doc.text("TAX INVOICE", 40, 120);
-
-    doc.setFillColor(241, 245, 249);
-    doc.roundedRect(pageWidth - 220, 40, 180, 50, 5, 5, "F");
-    
-    doc.setFontSize(10);
+    doc.text("Invoice No.", pageWidth - 200, 45);
     doc.setFont("helvetica", "normal");
-    doc.setTextColor(71, 85, 105);
-    doc.text("Invoice No :", pageWidth - 210, 60);
-    doc.setFont("helvetica", "bold");
-    doc.text(inv.id, pageWidth - 130, 60);
-    
-    doc.setFont("helvetica", "normal");
-    doc.text("Date :", pageWidth - 210, 80);
-    doc.setFont("helvetica", "bold");
-    doc.text(inv.date, pageWidth - 130, 80);
+    doc.text(inv.id || "—", pageWidth - 120, 45);
 
-    // 3. To Section
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(11);
+    doc.text("Invoice Date:", pageWidth - 200, 60);
+    doc.setFont("helvetica", "normal");
+    doc.text(inv.date || "—", pageWidth - 120, 60);
+
+    doc.setFont("helvetica", "bold");
+    doc.text("Status:", pageWidth - 200, 75);
+    doc.setFont("helvetica", "normal");
+    doc.text(inv.status || "—", pageWidth - 120, 75);
+
+    doc.setFont("helvetica", "bold");
+    doc.text("Paid Date:", pageWidth - 200, 90);
+    doc.setFont("helvetica", "normal");
+    doc.text(inv.date || "—", pageWidth - 120, 90);
+
+    // Blue Line separator
+    doc.setDrawColor(59, 130, 246);
+    doc.setLineWidth(1.5);
+    doc.line(40, 105, pageWidth - 40, 105);
+
+    // TAX INVOICE Title
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(20);
+    doc.setTextColor(15, 23, 42); 
+    doc.text("TAX INVOICE", 40, 140);
+
+    // Address Table Box
+    doc.setDrawColor(203, 213, 225); 
+    doc.setLineWidth(1);
+    doc.rect(40, 160, pageWidth - 80, 120);
+    doc.line(pageWidth / 2, 160, pageWidth / 2, 280);
+    doc.line(40, 185, pageWidth - 40, 185); 
+    
+    // Header background
+    doc.setFillColor(248, 250, 252);
+    doc.rect(40.5, 160.5, (pageWidth - 80) / 2 - 1, 24, "F");
+    doc.rect(pageWidth / 2 + 0.5, 160.5, (pageWidth - 80) / 2 - 1, 24, "F");
+
+    doc.setFontSize(9);
+    doc.setTextColor(100, 116, 139);
+    doc.setFont("helvetica", "bold");
+    doc.text("FROM", 50, 177);
+    doc.text("BILL TO", (pageWidth / 2) + 10, 177);
+
+    // FROM Details
     doc.setTextColor(30, 41, 59);
-    doc.text("To,", 40, 160);
-    
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(10);
-    doc.text(`Client : ${inv.client}`, 40, 180);
-
-    // 4. Project Details
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(11);
-    doc.text("Details", pageWidth - 220, 160);
+    doc.text("PREET TECH (OPC) PRIVATE LIMITED", 50, 200);
     
     doc.setFont("helvetica", "normal");
-    doc.setFontSize(10);
-    doc.text(`Service : Subscription`, pageWidth - 220, 180);
-    doc.text(`Status : ${inv.status}`, pageWidth - 220, 195);
+    doc.text("GSTIN: 05AAQCP8357E1Z1", 50, 215);
+    const fromAddr = "3/118 GURUNANAKPURA, Nainital Road, Near\nKrishna Hospital, Haldwani, Nainital, Uttarakhand - 263139";
+    doc.text(`Address: ${fromAddr}`, 50, 230, { maxWidth: (pageWidth/2) - 30 });
+    doc.text("Phone: +91 8679933302", 50, 260);
+    doc.text("Email: info@preettech.com", 50, 275);
 
-    // 5. Table Data
+    // BILL TO Details
+    const toDetails = inv.billingDetails || {};
+    doc.setFont("helvetica", "bold");
+    doc.text(toDetails.name || inv.client || "—", (pageWidth / 2) + 10, 200);
+    
+    doc.setFont("helvetica", "normal");
+    let toY = 215;
+    if (toDetails.gstNumber) {
+      doc.text(`GSTIN: ${toDetails.gstNumber}`, (pageWidth / 2) + 10, toY);
+      toY += 15;
+    }
+    
+    let toAddress = toDetails.address || "—";
+    if (toDetails.city) toAddress += `, ${toDetails.city}`;
+    if (toDetails.state) toAddress += `, ${toDetails.state}`;
+    if (toDetails.pincode) toAddress += ` - ${toDetails.pincode}`;
+    
+    doc.text(`Address: ${toAddress}`, (pageWidth / 2) + 10, toY, { maxWidth: (pageWidth/2) - 30 });
+    
+    // Calculate space for dynamic lines based on text split
+    const addressLines = doc.splitTextToSize(toAddress, (pageWidth/2) - 30);
+    const afterAddrY = toY + (addressLines.length * 12);
+    
+    if (toDetails.mobile) {
+        doc.text(`Phone: ${toDetails.mobile}`, (pageWidth / 2) + 10, afterAddrY);
+        if (toDetails.email) doc.text(`Email: ${toDetails.email}`, (pageWidth / 2) + 10, afterAddrY + 12);
+    } else if (toDetails.email) {
+        doc.text(`Email: ${toDetails.email}`, (pageWidth / 2) + 10, afterAddrY);
+    }
+
+    // Items Table
+    const amount = Number(inv.amount || 0);
+    const subtotal = amount / 1.18;
+    const gst = subtotal * 0.09;
+
     const tableData = [
-      [1, inv.event, "-", `Rs. ${inv.amount.toLocaleString()}`, `Rs. ${inv.amount.toLocaleString()}`]
+      [
+        1, 
+        `${inv.event || 'Service'}\nAs per selected service package`, 
+        "998365", 
+        1, 
+        subtotal.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}), 
+        subtotal.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})
+      ]
     ];
 
     autoTable(doc, {
-      startY: 220,
-      head: [['Sr No.', 'Description', 'Duration', 'Rate (INR)', 'Amount (INR)']],
+      startY: 300,
+      head: [['#', 'Description', 'SAC Code', 'Qty', 'Rate', 'Amount']],
       body: tableData,
       theme: 'grid',
       headStyles: { 
-        fillColor: [168, 85, 247],
+        fillColor: [59, 130, 246],
         textColor: 255, 
         fontStyle: 'bold',
-        halign: 'center'
+        halign: 'center',
+        valign: 'middle'
       },
       styles: { 
-        fontSize: 10,
+        fontSize: 9,
         cellPadding: 8,
-        lineColor: [226, 232, 240],
+        lineColor: [203, 213, 225], 
         lineWidth: 1,
+        textColor: [30, 41, 59]
       },
       columnStyles: {
-        0: { halign: 'center', cellWidth: 50 },
-        1: { halign: 'left' },
+        0: { halign: 'center', cellWidth: 30 },
+        1: { halign: 'left', cellWidth: 200 },
         2: { halign: 'center' },
         3: { halign: 'center' },
-        4: { halign: 'center', fontStyle: 'bold' }
+        4: { halign: 'right' },
+        5: { halign: 'right' }
       }
     });
 
-    // 6. Footer
     // @ts-ignore
-    const finalY = doc.lastAutoTable.finalY || 250;
+    const finalY = doc.lastAutoTable.finalY || 350;
+    
+    // Totals Section
+    const rightX1 = pageWidth - 200;
+    const rightX2 = pageWidth - 40;
+    
+    doc.setFont("helvetica", "normal");
+    doc.text("Subtotal", rightX1, finalY + 20, { align: 'left' });
+    doc.text(subtotal.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}), rightX2, finalY + 20, { align: 'right' });
+    
+    doc.text("CGST @ 9%", rightX1, finalY + 40, { align: 'left' });
+    doc.text(gst.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}), rightX2, finalY + 40, { align: 'right' });
+    
+    doc.text("SGST @ 9%", rightX1, finalY + 60, { align: 'left' });
+    doc.text(gst.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}), rightX2, finalY + 60, { align: 'right' });
     
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(14);
-    doc.setTextColor(30, 41, 59);
-    doc.text("Total Amount :", pageWidth - 140, finalY + 40);
-    doc.setTextColor(168, 85, 247);
-    doc.text(`Rs. ${inv.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, pageWidth - 40, finalY + 40, { align: 'right' });
-
+    doc.text("Total Tax", rightX1, finalY + 80, { align: 'left' });
+    doc.text((gst * 2).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}), rightX2, finalY + 80, { align: 'right' });
+    
+    doc.setDrawColor(203, 213, 225);
+    doc.line(40, finalY + 90, pageWidth - 40, finalY + 90);
+    
+    doc.setFillColor(248, 250, 252);
+    doc.rect(40, finalY + 90, pageWidth - 80, 25, "F");
+    
     doc.setFontSize(10);
+    doc.text("GRAND TOTAL", rightX1, finalY + 107, { align: 'left' });
+    doc.text(amount.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}), rightX2, finalY + 107, { align: 'right' });
+    
+    doc.line(40, finalY + 115, pageWidth - 40, finalY + 115);
+
+    // Amount in Words
+    doc.setFont("helvetica", "bold");
+    doc.text("Amount in Words:", 40, finalY + 135);
     doc.setFont("helvetica", "normal");
-    doc.setTextColor(148, 163, 184);
-    doc.text("This is an electronically generated tax invoice based on system records.", 40, finalY + 120);
+    doc.text(`Rupees ${numberToWords(Math.round(amount))}.`, 135, finalY + 135);
+
+    // Payment & Notes
+    const notesY = finalY + 160;
+    doc.setDrawColor(226, 232, 240);
+    doc.setFillColor(248, 250, 252);
+    doc.rect(40, notesY, pageWidth - 80, 80, "FD");
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9);
+    doc.setTextColor(30, 41, 59);
+    doc.text("Payment & Notes", 50, notesY + 15);
+    
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(71, 85, 105);
+    doc.text(`The total invoice value of ${amount.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})} is inclusive of 18% GST.`, 50, notesY + 35);
+    doc.text("Payment terms: As mutually agreed.", 50, notesY + 48);
+    doc.text(`Payment Method: ${inv.paymentMethod || 'Online'}`, 50, notesY + 61);
+    doc.text("Service: Venue Promotion & Lead Generation Services", 50, notesY + 74);
+
+    // Footer
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const footerY = pageHeight - 60;
+    doc.setFontSize(8);
+    doc.setTextColor(100, 116, 139);
+    doc.text("This is a computer-generated invoice and does not require a signature.", pageWidth / 2, footerY, { align: 'center' });
+    doc.text("Thank you for choosing Partydial.", pageWidth / 2, footerY + 12, { align: 'center' });
 
     doc.save(`Invoice_${inv.id}.pdf`);
   };
@@ -224,6 +367,13 @@ export default function InvoicesPage() {
                 <p className="text-sm text-slate-400 font-medium mt-1">Official billing documents and fiscal reporting</p>
              </div>
          </div>
+         <Link 
+           href="/billing/invoices/create"
+           className="flex items-center gap-2 px-5 py-3 rounded-xl grad-purple text-white font-bold text-sm shadow-lg shadow-purple-500/30 hover:scale-105 active:scale-95 transition-all w-fit"
+         >
+           <Plus size={18} strokeWidth={3} />
+           <span>Make Invoice</span>
+         </Link>
       </div>
 
       {/* Controls */}

@@ -123,6 +123,14 @@ const planLabels: {[key: string]: string} = {
   '1000-2000 PAX Membership': 'Elite Live',
   '2000-5000 PAX Membership': 'Platinum Live',
   '5000+ PAX Membership': 'Enterprise Live',
+  'Upto 50 PAX': 'Starter Live',
+  'Upto 100 PAX': 'Growth Live',
+  'Upto 200 PAX': 'Priority Live',
+  'Upto 500 PAX': 'Featured Live',
+  'Upto 1000 PAX': 'Premium Live',
+  'Upto 2000 PAX': 'Elite Live',
+  'Upto 5000 PAX': 'Platinum Live',
+  '5000+ PAX': 'Enterprise Live',
   'trial_30': 'Introductory Offer',
   'free': 'Free Live'
 };
@@ -264,9 +272,7 @@ export default function VendorDashboard() {
       return { 
         daysLeft: diffDays, 
         percent, 
-        label: (plan === 'trial_30' || plan?.includes('Override')) 
-          ? 'Trial Access' 
-          : 'Live Pack' 
+        label: plan === 'trial_30' ? 'Trial Access' : (planLabels[plan] || plan || 'Live Pack')
       };
     }
     
@@ -1095,7 +1101,7 @@ export default function VendorDashboard() {
                       setActiveTab(item.id);
                       if (isMobile) setSidebarOpen(false);
                     }}
-                    className={`w-full flex items-center ${sidebarOpen ? 'gap-3 px-4 justify-start' : 'justify-center px-0'} py-3.5 rounded-2xl text-[13px] font-extrabold transition-colors duration-200 ${
+                    className={`w-full flex items-center ${sidebarOpen ? 'gap-3 px-4 justify-start' : 'justify-center px-0'} py-3.5 rounded-2xl text-[14px] font-semibold transition-colors duration-200 ${
                       activeTab === item.id 
                       ? 'bg-slate-900 text-white shadow-xl shadow-slate-900/10' 
                       : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
@@ -1148,7 +1154,7 @@ export default function VendorDashboard() {
                       setActiveTab(item.id);
                       if (isMobile) setSidebarOpen(false);
                     }}
-                    className={`w-full flex items-center ${sidebarOpen ? 'gap-3 px-4 justify-start' : 'justify-center px-0'} py-3.5 rounded-2xl text-[13px] font-extrabold transition-colors duration-200 ${
+                    className={`w-full flex items-center ${sidebarOpen ? 'gap-3 px-4 justify-start' : 'justify-center px-0'} py-3.5 rounded-2xl text-[14px] font-semibold transition-colors duration-200 ${
                       activeTab === item.id 
                       ? 'bg-slate-900 text-white shadow-xl shadow-slate-900/10' 
                       : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
@@ -1166,25 +1172,78 @@ export default function VendorDashboard() {
          </div>
 
          <div className={`mt-auto ${sidebarOpen ? 'p-6' : 'p-4 flex flex-col items-center'}`}>
-            <button 
-               onClick={() => window.open('https://play.google.com/store/apps/details?id=com.partydial.partner', '_blank')}
-               className={`w-full flex items-center ${sidebarOpen ? 'justify-between px-5' : 'justify-center px-0'} py-4 rounded-3xl bg-slate-900 text-white shadow-xl shadow-slate-900/20 hover:bg-pd-pink transition-colors group mb-4`}
-               title={!sidebarOpen ? "Download Partner App" : undefined}
-            >
-               <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-2xl bg-white/10 flex items-center justify-center group-hover:bg-white/20 transition-colors">
-                     <Smartphone size={20} className="text-white" />
-                  </div>
-                  {sidebarOpen && (
-                    <div className="text-left">
-                       <p className="text-[10px] font-black uppercase tracking-widest leading-none mb-1">Partner App</p>
-                       <p className="text-[8px] font-bold uppercase tracking-widest text-slate-400">Download Now</p>
-                    </div>
+            {sidebarOpen ? (
+               <div className="bg-white border border-slate-200/60 shadow-[0_4px_12px_rgba(0,0,0,0.03)] rounded-xl p-3 flex flex-col w-full relative overflow-hidden group mb-4">
+                  {/* Subtle background glow based on status */}
+                  {expiryInfo && (
+                    <div className={`absolute -inset-1 opacity-20 blur-xl transition-all group-hover:opacity-30 ${expiryInfo.daysLeft < 7 ? 'bg-rose-500' : 'bg-emerald-400'}`}></div>
                   )}
+                  <div className="relative z-10">
+                  {expiryInfo && expiryInfo.daysLeft > 0 ? (
+                     <>
+                       <div className="flex items-center justify-between w-full mb-3 gap-1">
+                          <div className="flex items-center gap-2">
+                             <div className="relative flex items-center justify-center bg-slate-50 p-1.5 rounded-lg border border-slate-100 shrink-0">
+                                <span className={`absolute w-2 h-2 rounded-full ${expiryInfo.daysLeft < 7 ? 'bg-rose-500' : 'bg-emerald-500'} animate-ping opacity-60`}></span>
+                                <span className={`relative w-1.5 h-1.5 rounded-full ${expiryInfo.daysLeft < 7 ? 'bg-rose-500' : 'bg-emerald-500'}`}></span>
+                             </div>
+                             <div className="min-w-0">
+                                <span className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-800 leading-none block mb-0.5 truncate">
+                                   {expiryInfo.label}
+                                </span>
+                                <span className="text-[7px] font-bold uppercase tracking-widest text-slate-400 leading-none block">
+                                   Validity
+                                </span>
+                             </div>
+                          </div>
+                          <div className={`flex items-center gap-1 px-1.5 py-1 rounded-lg text-[9px] font-black tracking-tight border shrink-0 ${
+                             expiryInfo.daysLeft < 7 
+                               ? 'bg-rose-50 text-rose-600 border-rose-100 shadow-[0_0_10px_rgba(244,63,94,0.1)]' 
+                               : 'bg-emerald-50 text-emerald-700 border-emerald-100 shadow-[0_0_10px_rgba(16,185,129,0.1)]'
+                          }`}>
+                             <Clock size={10} className={expiryInfo.daysLeft < 7 ? 'animate-pulse' : ''} />
+                             <span>{expiryInfo.daysLeft}d left</span>
+                          </div>
+                       </div>
+                       <div className="relative w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                          <motion.div 
+                             initial={{ width: 0 }}
+                             animate={{ width: `${expiryInfo.percent}%` }}
+                             transition={{ duration: 1.5, ease: "circOut", delay: 0.5 }}
+                             className={`absolute top-0 left-0 h-full rounded-full shadow-sm ${
+                                expiryInfo.daysLeft < 7 
+                                  ? 'bg-linear-to-r from-rose-500 to-red-500' 
+                                  : 'bg-linear-to-r from-pd-pink via-amber-400 to-emerald-400'
+                             }`}
+                          />
+                       </div>
+                     </>
+                  ) : (
+                     <div className="flex flex-col items-center justify-center w-full py-1 gap-2.5">
+                        <div className="flex items-center gap-2">
+                           <div className="w-6 h-6 rounded-full bg-rose-50 flex items-center justify-center text-rose-600 border border-rose-100 shrink-0">
+                              <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse shadow-[0_0_8px_rgba(244,63,94,0.6)]"></span>
+                           </div>
+                           <span className="text-[10px] font-black uppercase tracking-[0.15em] text-rose-600 leading-none text-center">
+                              Plan Expired
+                           </span>
+                        </div>
+                        <Link href="/dashboard/onboarding/pricing" className="bg-slate-900 hover:bg-pd-pink transition-colors text-white px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest shadow-lg shadow-slate-900/10 active:scale-95 text-center w-full">
+                           Upgrade Now
+                        </Link>
+                     </div>
+                  )}
+                  </div>
                </div>
-               {sidebarOpen && <ChevronRight size={14} className="text-white/40 group-hover:translate-x-1 group-hover:text-white transition-all" />}
-            </button>
-
+            ) : (
+               <div className="mb-4 relative group" title={expiryInfo && expiryInfo.daysLeft > 0 ? `${expiryInfo.label}: ${expiryInfo.daysLeft} days left` : 'Plan Expired'}>
+                  <div className="relative flex items-center justify-center bg-slate-50 p-2.5 rounded-xl border border-slate-100 hover:bg-slate-100 transition-colors">
+                     <span className={`absolute w-3 h-3 rounded-full ${!expiryInfo || expiryInfo.daysLeft < 7 ? 'bg-rose-500' : 'bg-emerald-500'} animate-ping opacity-60`}></span>
+                     <span className={`relative w-2 h-2 rounded-full ${!expiryInfo || expiryInfo.daysLeft < 7 ? 'bg-rose-500' : 'bg-emerald-500'}`}></span>
+                  </div>
+               </div>
+            )}
+            
             <button 
                onClick={handleLogout}
                className={`w-full flex items-center ${sidebarOpen ? 'gap-3 px-4 justify-start' : 'justify-center px-0'} py-3 rounded-2xl text-sm font-bold  text-red-500 hover:bg-red-50 transition-colors`}
@@ -1222,100 +1281,39 @@ export default function VendorDashboard() {
                      </div>
                   </div>
                   <div className="text-xl lg:text-2xl font-extrabold tracking-tight leading-none flex items-center gap-2.5">
-                     <div className="flex items-center gap-1.5">
-                        <span className="hidden sm:inline text-slate-800">Partner</span>
-                        <span className="bg-linear-to-r from-pd-pink to-purple-500 bg-clip-text text-transparent">Console</span>
-                     </div>
-                     <div className="w-1 h-4 bg-slate-200 rounded-full mx-0.5"></div>
-                     <span className="capitalize text-slate-500 font-bold">{activeTab}</span>
+                     <span className="capitalize text-slate-800 font-bold">{activeTab}</span>
                   </div>
                </div>
             </div>
 
             {/* Center Section: Plan Validity Status */}
-            <div className="hidden xl:flex items-center justify-center flex-1 px-8">
-               <div className="bg-white/60 backdrop-blur-md border border-slate-200/50 shadow-[0_2px_10px_rgba(0,0,0,0.02)] rounded-2xl p-2.5 px-5 flex flex-col min-w-85">
-                  {expiryInfo ? (
-                     <>
-                       <div className="flex items-center justify-between w-full mb-2">
-                          <div className="flex items-center gap-2">
-                             <div className="relative flex items-center justify-center">
-                                <span className="absolute w-2 h-2 rounded-full bg-pd-pink animate-ping opacity-75"></span>
-                                <span className="relative w-1.5 h-1.5 rounded-full bg-pd-pink"></span>
-                             </div>
-                             <span className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-500">
-                                {expiryInfo.label} <span className="text-slate-800 ">Validity</span>
-                             </span>
-                          </div>
-                          <div className="bg-slate-100/80 px-2 py-0.5 rounded text-[10px] font-black text-slate-800  tracking-tighter">
-                             {expiryInfo.daysLeft > 0 ? `${expiryInfo.daysLeft} Days Left` : 'Expired'}
-                          </div>
-                       </div>
-                       <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden shadow-inner">
-                          <motion.div 
-                             initial={{ width: 0 }}
-                             animate={{ width: `${expiryInfo.percent}%` }}
-                             transition={{ duration: 1.5, ease: "circOut", delay: 0.5 }}
-                             className={`h-full rounded-full shadow-sm ${
-                                expiryInfo.daysLeft < 7 
-                                  ? 'bg-linear-to-r from-red-500 to-rose-500' 
-                                  : 'bg-linear-to-r from-emerald-400 via-teal-400 to-pd-pink'
-                             }`}
-                          />
-                       </div>
-                     </>
-                  ) : (
-                     <div className="flex flex-col items-center justify-center py-1">
-                        <span className="text-[10px] font-black uppercase tracking-[0.3em] text-blue-500 mb-2">Receiving Live Updates</span>
-                        <div className="flex gap-1.5">
-                           {[1, 2, 3, 4, 5].map(i => (
-                             <motion.div 
-                               key={i} 
-                               animate={{ opacity: [0.2, 1, 0.2] }}
-                               transition={{ duration: 2, repeat: Infinity, delay: i * 0.2 }}
-                               className="w-10 h-1 bg-linear-to-r from-blue-400 to-indigo-400 rounded-full"
-                             />
-                           ))}
-                        </div>
-                     </div>
-                  )}
-               </div>
-            </div>
+
 
             <div className="flex items-center gap-3 lg:gap-5">
 
-               <div className="hidden sm:flex items-center bg-white border border-slate-200/60 shadow-[0_2px_8px_rgba(0,0,0,0.02)] rounded-2xl p-1 pr-1.5 mr-1">
-                  <div className="flex items-center gap-2 px-3 py-1.5">
-                    <div className={`relative flex items-center justify-center`}>
-                       <div className={`absolute w-2.5 h-2.5 rounded-full ${isRealtimeConnected ? 'bg-emerald-500 animate-ping opacity-60' : 'bg-slate-300'}`}></div>
-                       <div className={`relative w-1.5 h-1.5 rounded-full ${isRealtimeConnected ? 'bg-emerald-500' : 'bg-slate-400'}`}></div>
-                    </div>
-                    <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">Live Sync</span>
-                  </div>
+               <div className="hidden sm:flex items-center gap-3 mr-2">
 
-                  <div className="w-px h-6 bg-slate-200/60 mx-1"></div>
+                 <div className="relative flex">
+                   <button 
+                     onClick={() => setShowNotifDropdown(!showNotifDropdown)}
+                     className="w-10 h-10 rounded-full bg-white border border-slate-200/60 shadow-[0_2px_8px_rgba(0,0,0,0.02)] flex items-center justify-center text-slate-600 hover:text-pd-pink hover:bg-slate-50 transition-all relative group"
+                   >
+                     <Bell size={18} className="group-hover:scale-110 transition-transform duration-300" />
+                     {unreadLeadsCount > 0 && (
+                       <span className="absolute -top-1 -right-1 w-4.5 h-4.5 bg-linear-to-tr from-pd-pink to-rose-500 text-white text-[9px] font-bold flex items-center justify-center rounded-full border-2 border-white shadow-md">
+                         {unreadLeadsCount}
+                       </span>
+                     )}
+                   </button>
 
-                  <div className="relative">
-                    <button 
-                      onClick={() => setShowNotifDropdown(!showNotifDropdown)}
-                      className="w-9.5 h-9.5 rounded-xl bg-slate-50/80 flex items-center justify-center text-slate-600 hover:text-pd-pink hover:bg-pd-pink/5 hover:shadow-sm transition-all relative group"
-                    >
-                      <Bell size={18} className="group-hover:scale-110 transition-transform duration-300" />
-                      {unreadLeadsCount > 0 && (
-                        <span className="absolute -top-1 -right-1 w-4.5 h-4.5 bg-linear-to-tr from-pd-pink to-rose-500 text-white text-[9px] font-bold flex items-center justify-center rounded-full border-2 border-white shadow-md">
-                          {unreadLeadsCount}
-                        </span>
-                      )}
-                    </button>
-
-                    <NotificationDropdown 
-                      isOpen={showNotifDropdown}
-                      onClose={() => setShowNotifDropdown(false)}
-                      notifications={recentLeads}
-                      onViewAll={() => setActiveTab('leads')}
-                      lastClearedTime={lastClearedTime}
-                    />
-                  </div>
+                   <NotificationDropdown 
+                     isOpen={showNotifDropdown}
+                     onClose={() => setShowNotifDropdown(false)}
+                     notifications={recentLeads}
+                     onViewAll={() => setActiveTab('leads')}
+                     lastClearedTime={lastClearedTime}
+                   />
+                 </div>
                </div>
                
                <div className="hidden lg:block h-8 w-px bg-slate-200/50"></div>

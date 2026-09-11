@@ -1,27 +1,22 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+
+import Script from 'next/script';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { account, databases, DATABASE_ID, VENUES_COLLECTION_ID, Query } from '@/lib/appwrite';
+
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Check, 
   ChevronDown, 
-  HelpCircle, 
   Zap, 
-  Target, 
-  TrendingUp, 
-  ShieldCheck, 
-  Users, 
-  Building2, 
-  BarChart3, 
-  MessageSquare,
-  ArrowRight,
   Star,
   Plus,
   Sparkle,
   CheckCircle2,
   ChevronRight,
-  Eye,
   Loader2,
   MapPin
 } from 'lucide-react';
@@ -29,7 +24,6 @@ import {
 // --- STYLES ---
 
 const gradientStyle = "bg-linear-to-r from-red-500 via-pink-500 via-purple-500 to-blue-500";
-const textGradientStyle = "bg-linear-to-r from-red-500 via-pink-500 via-purple-500 to-blue-500 bg-clip-text text-transparent";
 
 // --- DATA ---
 
@@ -38,8 +32,8 @@ const pricingPlans = [
     id: 1,
     name: "Upto 50 PAX",
     packName: "Starter Pack",
-    mrp: { quarterly: 4500, halfYearly: 8250, annually: 14965 },
-    price: { quarterly: 3780, halfYearly: 6660, annually: 12045 },
+    mrp: { quarterly: 5310, halfYearly: 10620, annually: 21535 },
+    price: { quarterly: 4410, halfYearly: 7920, annually: 12045 },
     leads: "Unlimited Leads",
     features: [
       "Basic listing visibility",
@@ -53,10 +47,10 @@ const pricingPlans = [
   },
   {
     id: 2,
-    name: "50–100 PAX",
+    name: "Upto 100 PAX",
     packName: "Growth Pack",
-    mrp: { quarterly: 6300, halfYearly: 11000, annually: 20075 },
-    price: { quarterly: 5040, halfYearly: 9000, annually: 16060 },
+    mrp: { quarterly: 6210, halfYearly: 12420, annually: 25185 },
+    price: { quarterly: 5310, halfYearly: 9900, annually: 16060 },
     leads: "Unlimited Leads",
     features: [
       "Improved listing visibility",
@@ -70,10 +64,10 @@ const pricingPlans = [
   },
   {
     id: 3,
-    name: "100–200 PAX",
+    name: "Upto 200 PAX",
     packName: "Priority Pack",
-    mrp: { quarterly: 10500, halfYearly: 19000, annually: 35040 },
-    price: { quarterly: 8910, halfYearly: 15840, annually: 28105 },
+    mrp: { quarterly: 10710, halfYearly: 21420, annually: 43435 },
+    price: { quarterly: 8910, halfYearly: 16920, annually: 28105 },
     leads: "Unlimited Leads",
     features: [
       "Priority listing in search results",
@@ -87,10 +81,10 @@ const pricingPlans = [
   },
   {
     id: 4,
-    name: "200–500 PAX",
+    name: "Upto 500 PAX",
     packName: "Featured Pack",
-    mrp: { quarterly: 16000, halfYearly: 30000, annually: 56940 },
-    price: { quarterly: 13500, halfYearly: 24300, annually: 44895 },
+    mrp: { quarterly: 16110, halfYearly: 32220, annually: 65335 },
+    price: { quarterly: 14310, halfYearly: 26820, annually: 44895 },
     leads: "Unlimited Leads",
     features: [
       "Featured placement in listings",
@@ -104,10 +98,10 @@ const pricingPlans = [
   },
   {
     id: 5,
-    name: "500–1000 PAX",
+    name: "Upto 1000 PAX",
     packName: "Premium Pack",
-    mrp: { quarterly: 22500, halfYearly: 42500, annually: 79935 },
-    price: { quarterly: 18900, halfYearly: 34920, annually: 65335 },
+    mrp: { quarterly: 22410, halfYearly: 44820, annually: 90885 },
+    price: { quarterly: 19710, halfYearly: 35820, annually: 65335 },
     leads: "Unlimited Leads",
     features: [
       "Premium placement in listings",
@@ -121,10 +115,10 @@ const pricingPlans = [
   },
   {
     id: 6,
-    name: "1000–2000 PAX",
+    name: "Upto 2000 PAX",
     packName: "Elite Pack",
-    mrp: { quarterly: 31000, halfYearly: 57500, annually: 109865 },
-    price: { quarterly: 26100, halfYearly: 48600, annually: 90885 },
+    mrp: { quarterly: 30510, halfYearly: 61020, annually: 123735 },
+    price: { quarterly: 26910, halfYearly: 48600, annually: 90885 },
     leads: "Unlimited Leads",
     features: [
       "Top city visibility",
@@ -138,10 +132,10 @@ const pricingPlans = [
   },
   {
     id: 7,
-    name: "2000–5000 PAX",
+    name: "Upto 5000 PAX",
     packName: "Platinum Pack",
-    mrp: { quarterly: 50000, halfYearly: 95000, annually: 179945 },
-    price: { quarterly: 40500, halfYearly: 75600, annually: 138335 },
+    mrp: { quarterly: 50310, halfYearly: 100620, annually: 204035 },
+    price: { quarterly: 41310, halfYearly: 79020, annually: 138335 },
     leads: "Unlimited Leads",
     features: [
       "High priority ranking",
@@ -157,8 +151,8 @@ const pricingPlans = [
     id: 8,
     name: "5000+ PAX",
     packName: "Enterprise Pack",
-    mrp: { quarterly: 82000, halfYearly: 155000, annually: 300030 },
-    price: { quarterly: 63000, halfYearly: 117000, annually: 218635 },
+    mrp: { quarterly: 89910, halfYearly: 179820, annually: 364635 },
+    price: { quarterly: 62910, halfYearly: 118620, annually: 218635 },
     leads: "Unlimited Leads",
     features: [
       "Exclusive lead priority",
@@ -172,63 +166,9 @@ const pricingPlans = [
   }
 ];
 
-const addonRates = [
-  { pax: "Upto 50", price: 1999 },
-  { pax: "50–100", price: 2999 },
-  { pax: "100–200", price: 3999 },
-  { pax: "200–500", price: 6999 },
-  { pax: "500–1000", price: 9999 },
-  { pax: "1000–2000", price: 14999 },
-  { pax: "2000–5000", price: 19999 }
-];
-
-const faqs = [
-  { 
-    id: "01",
-    question: "How do I list my venue?", 
-    answer: "Listing is simple. Create your partner account, upload high-quality photos of your space, define your PAX capacity, and set your base pricing. Our team will verify your listing within 24 hours." 
-  },
-  { 
-    id: "02",
-    question: "How do I receive leads?", 
-    answer: "Once listed, your venue appears in searches. When a customer shows interest, you'll get an instant WhatsApp notification and the lead will appear in your real-time dashboard." 
-  },
-  { 
-    id: "03",
-    question: "Can I update pricing?", 
-    answer: "Yes, you have full control. You can update your pricing, seasonal rates, and availability at any time through your dedicated partner portal." 
-  },
-  { 
-    id: "04",
-    question: "Is there a listing fee?", 
-    answer: "We offer various subscription plans. While there are premium visibility tiers, we ensure every partner gets value with verified leads and dedicated support." 
-  }
-];
-
-const valueProps = [
-  { title: "Verified customer leads", desc: "No more junk queries. Every lead is pre-filtered for quality.", icon: <ShieldCheck size={28} /> },
-  { title: "Location-based targeting", desc: "Get inquiries from customers looking specifically in your city area.", icon: <Target size={28} /> },
-  { title: "High conversion potential", desc: "Connect with high-intent users actively ready to book venues.", icon: <TrendingUp size={28} /> },
-  { title: "Easy lead management", desc: "A sleek dashboard to track, manage, and close every event deal.", icon: <BarChart3 size={28} /> },
-  { title: "Dedicated support", desc: "Our success team is here to help you grow your venue revenue.", icon: <Users size={28} /> }
-];
-
 // --- COMPONENTS ---
 
-const GridBackground = () => (
-  <div className="absolute inset-0 -z-10 overflow-hidden pointer-events-none">
-    <div 
-      className="absolute inset-0 opacity-[0.03]" 
-      style={{ 
-        backgroundImage: `linear-gradient(#000 1px, transparent 1px), linear-gradient(90deg, #000 1px, transparent 1px)`,
-        backgroundSize: '40px 40px'
-      }}
-    ></div>
-    <div className="absolute inset-x-0 bottom-0 h-40 bg-linear-to-t from-white to-transparent"></div>
-  </div>
-);
-
-const InquiryPopup = React.memo(({ plan, billingDuration, isOpen, onClose }: { plan: typeof pricingPlans[0] | null, billingDuration: 'quarterly' | 'halfYearly' | 'annually', isOpen: boolean, onClose: () => void }) => {
+const InquiryPopup = React.memo(({ plan, billingDuration, onClose }: { plan: typeof pricingPlans[0] | null, billingDuration: 'quarterly' | 'halfYearly' | 'annually', onClose: () => void }) => {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -242,7 +182,7 @@ const InquiryPopup = React.memo(({ plan, billingDuration, isOpen, onClose }: { p
   const [isSubmitted, setIsSubmitted] = useState(false);
   
   // Pincode/Location states
-  const [suggestions, setSuggestions] = useState<any[]>([]);
+  const [suggestions, setSuggestions] = useState<{display: string, city: string, district: string, pincode: string}[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [isLoadingPincode, setIsLoadingPincode] = useState(false);
 
@@ -272,7 +212,7 @@ const InquiryPopup = React.memo(({ plan, billingDuration, isOpen, onClose }: { p
 
         if (data[0].Status === 'Success') {
           const offices = data[0].PostOffice;
-          setSuggestions(offices.map((o: any) => ({
+          setSuggestions(offices.map((o: { Name: string, District: string, Pincode: string }) => ({
             display: `${o.Name}, ${o.District}`,
             city: o.Name,
             district: o.District,
@@ -281,8 +221,8 @@ const InquiryPopup = React.memo(({ plan, billingDuration, isOpen, onClose }: { p
         } else {
           setSuggestions([]);
         }
-      } catch (e) {
-        console.error('Pincode fetch error:', e);
+      } catch (err) {
+        console.error('Pincode fetch error:', err);
       } finally {
         setIsLoadingPincode(false);
       }
@@ -292,7 +232,7 @@ const InquiryPopup = React.memo(({ plan, billingDuration, isOpen, onClose }: { p
     return () => clearTimeout(timer);
   }, [formData.pincode]);
 
-  const selectPincode = (suggestion: any) => {
+  const selectPincode = (suggestion: { city: string, district: string, pincode: string }) => {
     setFormData(prev => ({ 
       ...prev, 
       pincode: suggestion.pincode, 
@@ -535,7 +475,7 @@ const InquiryPopup = React.memo(({ plan, billingDuration, isOpen, onClose }: { p
 
 InquiryPopup.displayName = 'InquiryPopup';
 
-const PricingCard = React.memo(({ plan, onSelect, billingDuration }: { plan: typeof pricingPlans[0], onSelect: (plan: typeof pricingPlans[0]) => void, billingDuration: 'quarterly' | 'halfYearly' | 'annually' }) => {
+const PricingCard = React.memo(({ plan, onSelect, billingDuration, onBuyNow }: { plan: typeof pricingPlans[0], onSelect: (plan: typeof pricingPlans[0]) => void, billingDuration: 'quarterly' | 'halfYearly' | 'annually', onBuyNow: (plan: typeof pricingPlans[0]) => void }) => {
   const currentMrp = plan.mrp[billingDuration];
   const currentPrice = plan.price[billingDuration];
   const discount = Math.round(((currentMrp - currentPrice) / currentMrp) * 100);
@@ -555,8 +495,8 @@ const PricingCard = React.memo(({ plan, onSelect, billingDuration }: { plan: typ
       <div className={`h-full flex flex-col p-5 md:p-6 rounded-3xl bg-white relative transition-all duration-300 ${plan.popular ? 'shadow-[0_20px_50px_-12px_rgba(236,72,153,0.2)]' : 'border border-slate-200 shadow-xl hover:shadow-2xl hover:border-slate-300'}`}>
         {plan.popular && (
           <>
-             <div className={`absolute -inset-[2px] rounded-3xl -z-10 pointer-events-none ${gradientStyle}`}></div>
-             <div className={`absolute -inset-[2px] rounded-3xl -z-20 opacity-30 blur-2xl transition-opacity duration-300 group-hover:opacity-50 pointer-events-none ${gradientStyle}`}></div>
+             <div className={`absolute -inset-0.5 rounded-3xl -z-10 pointer-events-none ${gradientStyle}`}></div>
+             <div className={`absolute -inset-0.5 rounded-3xl -z-20 opacity-30 blur-2xl transition-opacity duration-300 group-hover:opacity-50 pointer-events-none ${gradientStyle}`}></div>
           </>
         )}
 
@@ -573,7 +513,7 @@ const PricingCard = React.memo(({ plan, onSelect, billingDuration }: { plan: typ
             </div>
           )}
             <div className="flex flex-col mb-3">
-               <h3 className="text-xl font-[900] text-slate-900 leading-tight tracking-tight uppercase">{plan.name}</h3>
+               <h3 className="text-xl font-black text-slate-900 leading-tight tracking-tight uppercase">{plan.name}</h3>
                <span className="text-[9px] font-black text-pd-purple uppercase tracking-[0.2em] mt-1">{plan.packName}</span>
             </div>
           <div className="space-y-1 relative">
@@ -605,19 +545,23 @@ const PricingCard = React.memo(({ plan, onSelect, billingDuration }: { plan: typ
           ))}
         </div>
 
-        <button 
-          onClick={() => {
-            localStorage.setItem('billingDuration', billingDuration);
-            onSelect(plan);
-          }}
-          className={`relative z-20 w-full py-3 rounded-full text-xs font-black uppercase tracking-[0.2em] transition-all duration-300 ${
-            plan.popular 
-              ? `${gradientStyle} text-white shadow-xl shadow-pink-500/30 hover:scale-[1.02] hover:shadow-pink-500/50 cursor-pointer`
-              : 'bg-slate-900 text-white shadow-lg hover:bg-pd-pink hover:shadow-xl hover:shadow-pink-500/20 hover:-translate-y-1 cursor-pointer'
-          }`}
-        >
-          {plan.cta}
-        </button>
+        <div className="flex gap-2 w-full relative z-20">
+          <button 
+            onClick={() => onBuyNow(plan)}
+            className={`flex-1 flex items-center justify-center py-3 rounded-full text-[10px] sm:text-xs font-black uppercase tracking-widest sm:tracking-[0.15em] transition-all duration-300 ${gradientStyle} text-white shadow-lg hover:shadow-xl hover:shadow-pink-500/30 hover:scale-[1.02] cursor-pointer`}
+          >
+            Buy Now
+          </button>
+          <button 
+            onClick={() => {
+              localStorage.setItem('billingDuration', billingDuration);
+              onSelect(plan);
+            }}
+            className="flex-1 py-3 rounded-full text-[10px] sm:text-xs font-black uppercase tracking-widest sm:tracking-[0.15em] transition-all duration-300 bg-white border-2 border-slate-200 text-slate-700 hover:border-pink-400 hover:text-pink-600 shadow-sm hover:shadow-md cursor-pointer"
+          >
+            Contact Us
+          </button>
+        </div>
       </div>
     </motion.div>
   );
@@ -625,71 +569,137 @@ const PricingCard = React.memo(({ plan, onSelect, billingDuration }: { plan: typ
 
 PricingCard.displayName = 'PricingCard';
 
-const FaqItem = React.memo(({ item }: { item: typeof faqs[0] }) => {
-  const [isOpen, setIsOpen] = useState(false);
-  return (
-    <motion.div 
-      initial={{ opacity: 0, y: 10 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
-      className={`border border-slate-100 rounded-4xl overflow-hidden bg-white transition-all duration-300 ${isOpen ? 'shadow-2xl shadow-slate-200/50 ring-1 ring-slate-100' : 'hover:shadow-lg'}`}
-    >
-      <button 
-        onClick={() => setIsOpen(!isOpen)}
-        className="w-full p-6 md:p-9 text-left flex items-center justify-between group"
-      >
-        <div className="flex items-center gap-4 md:gap-8">
-          <span className="text-slate-300 font-bold text-[10px] md:text-xs tracking-tighter shrink-0">{item.id}</span>
-          <span className="text-base md:text-lg font-black text-slate-800 tracking-tight leading-tight group-hover:text-pink-600 transition-colors">
-            {item.question}
-          </span>
-        </div>
-        <div className={`w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center transition-all duration-300 shrink-0 ${isOpen ? 'bg-slate-900 text-white' : 'bg-slate-50 text-slate-400 group-hover:bg-slate-100'}`}>
-          <ChevronDown size={16} className={`transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />
-        </div>
-      </button>
-      <AnimatePresence mode="wait">
-        {isOpen && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.3, ease: "easeInOut" }}
-            className="overflow-hidden"
-          >
-            <div className="px-6 md:px-9 pb-8 md:pb-12 pt-0 ml-11 md:ml-20 text-slate-500 text-base md:text-xl font-medium leading-relaxed max-w-2xl">
-              {item.answer}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </motion.div>
-  );
-});
-
-FaqItem.displayName = 'FaqItem';
-
 export default function PricingPage() {
-  const [selectedAddon, setSelectedAddon] = useState<number | null>(null);
   const [inquiryPlan, setInquiryPlan] = useState<typeof pricingPlans[0] | null>(null);
   const [billingDuration, setBillingDuration] = useState<'quarterly' | 'halfYearly' | 'annually'>('annually');
+  
+  const router = useRouter();
+
+  const handleBuyNow = async (plan: typeof pricingPlans[0]) => {
+    try {
+      
+      const user = await account.get().catch(() => null);
+      if (!user) {
+         router.push('/login?redirect=/pricing');
+         return;
+      }
+      
+      let currentVenueId = user?.prefs?.venueId;
+      if (!currentVenueId) {
+         try {
+            const vRes = await databases.listDocuments(DATABASE_ID, VENUES_COLLECTION_ID, [Query.equal('userId', user.$id)]);
+            if (vRes.documents.length > 0) {
+               currentVenueId = vRes.documents[0].$id;
+            }
+         } catch (e) {
+            console.error('Failed to fetch venue ID:', e);
+         }
+      }
+      
+      const base = process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:5005/api";
+      const serverUrl = base.endsWith("/api") ? base : `${base}/api`;
+      const amount = plan.price[billingDuration];
+      
+      // 1. Create Order
+      const orderRes = await fetch(`${serverUrl}/payments/create-order`, {
+         method: 'POST',
+         headers: { 'Content-Type': 'application/json' },
+         body: JSON.stringify({
+            amount: Math.round(amount * 100), // convert to paise
+            venueId: currentVenueId || null,
+            receipt: `rcpt_${Date.now()}`
+         })
+      });
+      const order = await orderRes.json();
+      
+      console.log('Order created:', order);
+      console.log('Razorpay Key:', process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID);
+      if (order.error) {
+         alert(order.message || "Order creation failed");
+         
+         return;
+      }
+
+      const options = {
+          key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+          amount: order.amount,
+          currency: order.currency,
+          name: "PartyDial",
+          description: `Payment for ${plan.name}`,
+          order_id: order.id,
+          handler: async (response: { razorpay_payment_id: string; razorpay_order_id: string; razorpay_signature: string; }) => {
+              // Verify Payment
+              try {
+                  const verifyRes = await fetch(`${serverUrl}/payments/verify-payment`, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                          ...response,
+                          venueId: currentVenueId || null,
+                          venueName: user?.name || "",
+                          ownerEmail: user?.email,
+                          planId: plan.id === 1 ? 'bp50' : plan.id === 2 ? 'bp100' : plan.id === 3 ? 'bp200' : plan.id === 4 ? 'bp500' : plan.id === 5 ? 'bp1000' : plan.id === 6 ? 'bp2000' : plan.id === 7 ? 'bp5000' : 'bp9999',
+                          planName: plan.name,
+                          billingDuration: billingDuration,
+                          amount: amount,
+                          basePrice: amount,
+                          addons: [],
+                          discount: 0,
+                          billingDetails: { name: user.name, email: user.email, mobile: user.phone || "" },
+                          couponCode: null,
+                          preAddonId: null
+                      })
+                  });
+                  const verifyResult = await verifyRes.json();
+                  if (verifyResult.status === 'success') {
+                      window.location.href = '/dashboard';
+                  } else {
+                      alert("Payment verification failed");
+                  }
+              } catch (err) {
+                  alert("Payment Verification Error");
+              }
+          },
+          prefill: {
+              name: user.name,
+              email: user.email,
+          },
+          theme: {
+              color: "#8b5cf6"
+          }
+      };
+      
+      const rzp = new (window as unknown as { Razorpay: any }).Razorpay(options);
+      rzp.on('payment.failed', function (err: any){
+          alert("Payment Failed");
+      });
+      rzp.open();
+    } catch(err) {
+      console.error(err);
+      alert("Something went wrong");
+    } finally {
+      
+    }
+  }
+
 
   return (
     <div className="bg-slate-50 min-h-screen text-slate-900 selection:bg-pink-500 selection:text-white font-sans antialiased">
+      <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="lazyOnload" />
       
       <AnimatePresence>
         {inquiryPlan && (
           <InquiryPopup 
             plan={inquiryPlan} 
             billingDuration={billingDuration}
-            isOpen={!!inquiryPlan} 
+             
             onClose={() => setInquiryPlan(null)} 
           />
         )}
       </AnimatePresence>
 
       {/* 2. PRICING SECTION (MAIN) */}
-      <section className="py-24 px-6 lg:px-12 relative overflow-hidden bg-slate-50">
+      <section className="pt-32 pb-40 md:pt-40 lg:pb-48 px-6 lg:px-12 relative overflow-hidden bg-slate-50">
         {/* Decorative elements from image */}
         <div className="absolute top-10 left-10 opacity-40 transform -rotate-12">
           <svg width="100" height="40" viewBox="0 0 100 40" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -739,7 +749,7 @@ export default function PricingPage() {
           </motion.div>
         </div>
 
-        <div className="max-w-[1536px] mx-auto relative px-4 lg:px-8">
+        <div className="max-w-384 mx-auto relative px-4 lg:px-8">
           {/* Side Arrows from image */}
           <div className="absolute -left-4 xl:-left-8 top-1/2 -translate-y-1/2 hidden xl:block text-slate-200">
              <ChevronRight className="rotate-180" size={48} strokeWidth={3} />
@@ -752,7 +762,7 @@ export default function PricingPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 xl:gap-6">
             {pricingPlans.map((plan) => (
-              <PricingCard key={plan.id} plan={plan} onSelect={setInquiryPlan} billingDuration={billingDuration} />
+              <PricingCard key={plan.id} plan={plan} onSelect={setInquiryPlan} billingDuration={billingDuration} onBuyNow={handleBuyNow} />
             ))}
           </div>
         </div>
@@ -760,111 +770,9 @@ export default function PricingPage() {
 
       </section>
 
-      {/* 3. GOALS SECTION: HELP YOU ACHIEVE YOUR GOALS */}
-      <section className="py-16 bg-slate-50 relative overflow-hidden">
-        <div className="max-w-7xl mx-auto px-6 lg:px-12 relative z-10">
-          <div className="text-center mb-12">
-             <h2 className="text-4xl md:text-5xl font-[900] text-[#0F172A] uppercase tracking-tighter mb-4 flex items-center justify-center gap-4">
-                Help You Achieve 
-                <span className="pd-logo text-3xl md:text-5xl">PartyDial</span> 
-                Goals
-             </h2>
-             <p className="text-lg text-slate-500 font-bold max-w-2xl mx-auto">
-                Our platform is designed with one mission: to transform your venue into a lead-generation machine.
-             </p>
-          </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
-             {[
-                {
-                   icon: <Eye size={32} className="text-pink-500" />,
-                   title: "Dominant Visibility",
-                   desc: "Get seen by 1.8Cr+ active buyers specifically searching for premium venues in your city."
-                },
-                {
-                   icon: <Zap size={32} className="text-purple-500" />,
-                   title: "Instant Conversion",
-                   desc: "Verified high-intent inquiries delivered via SMS & Dashboard for immediate response."
-                },
-                {
-                   icon: <ShieldCheck size={32} className="text-blue-500" />,
-                   title: "Elite Brand Trust",
-                   desc: "Earn the official 'Verified Partner' badge to build instant credibility with every search."
-                }
-             ].map((goal, idx) => (
-                <motion.div 
-                   key={idx}
-                   initial={{ opacity: 0, y: 20 }}
-                   whileInView={{ opacity: 1, y: 0 }}
-                   viewport={{ once: true }}
-                   transition={{ delay: idx * 0.1 }}
-                   className="p-10 bg-white rounded-[40px] border border-slate-100 shadow-xl hover:shadow-2xl transition-all group"
-                >
-                   <div className="w-16 h-16 rounded-3xl bg-slate-50 flex items-center justify-center mb-8 group-hover:scale-110 transition-transform shadow-inner">
-                      {goal.icon}
-                   </div>
-                   <h3 className="text-2xl font-black text-slate-900 mb-4 tracking-tight">{goal.title}</h3>
-                   <p className="text-slate-500 font-bold leading-relaxed">{goal.desc}</p>
-                </motion.div>
-             ))}
-          </div>
-        </div>
-      </section>
-
-      {/* 4. PLATFORM FEATURES SECTION */}
-      <section className="py-16 bg-white border-y border-slate-100 overflow-hidden">
-        <div className="max-w-7xl mx-auto px-6 lg:px-12">
-          <div className="text-center mb-12 uppercase">
-             <span className="text-blue-500 text-[11px] font-black tracking-[0.4em] block mb-2">Capabilities</span>
-             <h2 className="text-3xl md:text-5xl font-extrabold text-[#0F172A] leading-tight tracking-tight">Platform Features</h2>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {[
-              { id: 1, title: "Unlimited Leads", desc: "No caps or limits. Receive every single inquiry that matches your venue's capacity and location.", icon: <Zap className="text-yellow-500" /> },
-              { id: 2, title: "WhatsApp Direct", desc: "Get instantly notified on WhatsApp the moment a customer submits an inquiry. Connect in seconds.", icon: <MessageSquare className="text-emerald-500" /> },
-              { id: 3, title: "Advanced Analytics", desc: "Monitor profile views, lead conversion rates, and seasonal trends with our comprehensive dashboard.", icon: <BarChart3 className="text-blue-500" /> },
-              { id: 4, title: "Priority Verification", desc: "Every inquiry is pre-verified with OTP and intent checks to ensure you only speak with serious bookers.", icon: <ShieldCheck className="text-pink-500" /> },
-              { id: 5, title: "Featured Listings", desc: "Appear at the top of search results in your city area to capture the maximum volume of customer traffic.", icon: <Target className="text-purple-500" /> },
-              { id: 6, title: "Dedicated Support", desc: "Premium plans include a dedicated success manager to help optimize your profile and boost your closure rates.", icon: <Users className="text-orange-500" /> },
-            ].map((feature, i) => (
-              <motion.div
-                key={feature.id}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.1 }}
-                className="p-10 rounded-[40px] bg-slate-50 border border-slate-100 hover:border-pink-200 hover:bg-white hover:shadow-2xl hover:shadow-pink-500/5 transition-all group"
-              >
-                <div className="w-14 h-14 rounded-2xl bg-white shadow-sm flex items-center justify-center mb-8 group-hover:scale-110 transition-transform">
-                  {React.cloneElement(feature.icon as React.ReactElement<any>, { size: 28 })}
-                </div>
-                <h3 className="text-lg font-bold text-slate-900 mb-4 tracking-tight">{feature.title}</h3>
-                <p className="text-sm text-slate-500 font-medium leading-relaxed">{feature.desc}</p>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-
-      {/* 6. FAQ SECTION (OPTIMIZED) */}
-      <section className="py-24 md:py-40 px-6 bg-white relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-1/2 h-full bg-slate-50/50 -z-10 translate-x-1/2 rounded-full blur-3xl opacity-50"></div>
-        
-         <div className="max-w-4xl mx-auto">
-            <div className="text-center mb-16">
-               <h2 className="text-3xl md:text-5xl font-black text-[#0F172A] uppercase tracking-tighter">Frequently Asked Questions</h2>
-            </div>
-            
-            <div className="space-y-6 md:space-y-8">
-               {faqs.map((faq, i) => (
-                 <FaqItem key={i} item={faq} />
-               ))}
-            </div>
-         </div>
-      </section>
 
     </div>
   );
 }
+

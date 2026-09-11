@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Zap, Bell } from 'lucide-react';
 
@@ -29,82 +30,89 @@ const NotificationDropdown = ({
   onViewAll,
   lastClearedTime 
 }: NotificationDropdownProps) => {
-  return (
+  const [mounted, setMounted] = React.useState(false);
+  React.useEffect(() => setMounted(true), []);
+
+  if (!mounted) return null;
+
+  return createPortal(
     <AnimatePresence>
       {isOpen && (
         <>
-          {/* Simple overlay without blur for performance */}
           <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-40 bg-slate-900/10" 
+            className="fixed inset-0 z-100 bg-slate-900/20 backdrop-blur-sm" 
             onClick={onClose} 
           />
           
           <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 10 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 10 }}
+            initial={{ x: "100%", opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            exit={{ x: "100%", opacity: 0 }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className="absolute right-[-40px] sm:right-0 mt-3 w-[280px] sm:w-80 bg-white rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.15)] border border-slate-100 z-50 overflow-hidden"
+            className="fixed top-0 right-0 h-full w-70 sm:w-87.5 bg-white shadow-[-10px_0_40px_rgba(0,0,0,0.1)] z-101 flex flex-col"
           >
-            <div className="p-5 border-b border-slate-50 flex items-center justify-between bg-slate-50/50">
-              <span className="text-[10px] font-black uppercase tracking-widest text-slate-900 ">Recent Notifications</span>
-              {notifications.some(n => n.unread && new Date(n.rawDate).getTime() > lastClearedTime) && (
-                <span className="px-2 py-0.5 bg-pd-pink text-white text-[7px] font-black rounded-full uppercase  animate-pulse">New Inquiries</span>
-              )}
+            <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-white shrink-0">
+              <span className="text-[12px] font-black uppercase tracking-widest text-slate-900">Notifications</span>
+              <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-50 text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors">
+                ✕
+              </button>
             </div>
 
-            <div className="max-h-[350px] overflow-y-auto no-scrollbar py-2">
+            <div className="flex-1 overflow-y-auto no-scrollbar p-2">
                {notifications.length > 0 ? (
-                 notifications.slice(0, 5).map((notif, i) => {
+                 notifications.slice(0, 10).map((notif, i) => {
                    const isNew = notif.unread && new Date(notif.rawDate).getTime() > lastClearedTime;
                    return (
                      <motion.div 
                        key={notif.id}
-                       initial={{ opacity: 0, x: -10 }}
+                       initial={{ opacity: 0, x: 20 }}
                        animate={{ opacity: 1, x: 0 }}
                        transition={{ delay: i * 0.05 }}
-                       className="p-4 hover:bg-slate-50 border-b border-slate-50 last:border-0 transition-colors cursor-pointer group"
+                       className="p-4 m-2 rounded-2xl hover:bg-slate-50 border border-transparent hover:border-slate-100 transition-colors cursor-pointer group"
                        onClick={() => { onViewAll(); onClose(); }}
                      >
                        <div className="flex items-start gap-4">
-                         <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-all ${isNew ? 'bg-pd-pink/10 text-pd-pink border border-pd-pink/10' : 'bg-slate-50 text-slate-300 border border-transparent'}`}>
-                           <Zap size={16} />
+                         <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 transition-all ${isNew ? 'bg-pd-pink/10 text-pd-pink border border-pd-pink/10 shadow-sm' : 'bg-slate-50 text-slate-300 border border-slate-100'}`}>
+                           <Zap size={20} />
                          </div>
                          <div className="flex-1 min-w-0">
                            <div className="flex items-center justify-between gap-2 mb-1">
-                             <p className="text-[11px] font-black text-slate-900 truncate uppercase ">{notif.name}</p>
-                             {isNew && <span className="w-1.5 h-1.5 bg-pd-pink rounded-full shadow-lg shadow-pd-pink/40"></span>}
+                             <p className="text-[12px] font-black text-slate-900 truncate uppercase">{notif.name}</p>
+                             {isNew && <span className="w-2 h-2 bg-pd-pink rounded-full shadow-lg shadow-pd-pink/40 animate-pulse"></span>}
                            </div>
-                           <p className="text-[9px] text-slate-500 font-bold uppercase tracking-tight opacity-80">{notif.event} • {notif.guests} PAX</p>
-                           <p className="text-[8px] font-black text-slate-400/50 uppercase tracking-widest mt-1.5  group-hover:text-pd-pink transition-colors">{notif.time}</p>
+                           <p className="text-[10px] text-slate-500 font-bold uppercase tracking-tight opacity-80">{notif.event} • {notif.guests} PAX</p>
+                           <p className="text-[9px] font-black text-slate-400/60 uppercase tracking-widest mt-2 group-hover:text-pd-pink transition-colors">{notif.time}</p>
                          </div>
                        </div>
                      </motion.div>
                    );
                  })
                ) : (
-                 <div className="p-12 text-center">
-                   <div className="w-14 h-14 rounded-3xl bg-slate-50 flex items-center justify-center mx-auto mb-4 text-slate-200">
-                     <Bell size={24} />
+                 <div className="h-full flex flex-col items-center justify-center p-12 text-center">
+                   <div className="w-16 h-16 rounded-full bg-slate-50 flex items-center justify-center mb-6 text-slate-200">
+                     <Bell size={28} />
                    </div>
-                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest ">All caught up</p>
+                   <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest">All caught up</p>
                  </div>
                )}
              </div>
 
-            <button 
-              onClick={() => { onViewAll(); onClose(); }}
-              className="w-full py-5 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 hover:text-white hover:bg-slate-900 transition-all bg-white border-t border-slate-50 "
-            >
-              Access Complete Pipeline
-            </button>
+            <div className="p-4 bg-slate-50/50 border-t border-slate-100 shrink-0">
+              <button 
+                onClick={() => { onViewAll(); onClose(); }}
+                className="w-full py-4 rounded-xl text-[11px] font-black uppercase tracking-[0.2em] text-white bg-slate-900 hover:bg-pd-pink transition-colors shadow-lg shadow-slate-900/10"
+              >
+                Access Complete Pipeline
+              </button>
+            </div>
           </motion.div>
         </>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 };
 

@@ -91,6 +91,8 @@ export default function Dashboard() {
   const base = rawBase.replace(/\/+$/, "");
   const serverUrl = base.endsWith("/api") ? base : `${base}/api`;
 
+  const [payments, setPayments] = useState<any[]>([]);
+
   const fetchLeads = useCallback(async (userId: string) => {
     try {
       const res = await fetch(`${serverUrl}/leads/user/${userId}`);
@@ -115,26 +117,39 @@ export default function Dashboard() {
       setUserRole(role);
 
       if (role === "Super Admin") {
-        const res = await fetch(`${serverUrl}/venues`, { cache: "no-store" });
-        const result = await res.json();
-        if (result.status === "success") {
-          const mapped = (result.data || []).map((v: any) => {
-            if (v.subscriptionPlan === 'trial_30') {
-              const createdAt = v.$createdAt ? new Date(v.$createdAt).getTime() : Date.now();
-              if ((Date.now() - createdAt) > (30 * 24 * 60 * 60 * 1000)) {
-                return { ...v, subscriptionPlan: 'None' };
+        const [venuesRes, paymentsRes] = await Promise.all([
+          fetch(`${serverUrl}/venues`, { cache: "no-store" }).catch(() => null),
+          fetch(`${serverUrl}/payments`, { cache: "no-store" }).catch(() => null)
+        ]);
+
+        if (venuesRes && venuesRes.ok) {
+          const venuesResult = await venuesRes.json().catch(() => ({}));
+          if (venuesResult.status === "success") {
+            const mapped = (venuesResult.data || []).map((v: any) => {
+              if (v.subscriptionPlan === 'trial_30') {
+                const createdAt = v.$createdAt ? new Date(v.$createdAt).getTime() : Date.now();
+                if ((Date.now() - createdAt) > (30 * 24 * 60 * 60 * 1000)) {
+                  return { ...v, subscriptionPlan: 'None' };
+                }
               }
-            }
-            return v;
-          });
-          setVenues(mapped);
+              return v;
+            });
+            setVenues(mapped);
+          }
+        }
+
+        if (paymentsRes && paymentsRes.ok) {
+          const paymentsResult = await paymentsRes.json().catch(() => ({}));
+          if (paymentsResult.status === "success") {
+            setPayments(paymentsResult.data || []);
+          }
         }
       } else {
         await fetchLeads(user.$id);
       }
       setLastUpdated(new Date());
-    } catch (e) {
-      console.error("Dashboard fetch error:", e);
+    } catch (e: any) {
+      console.warn("Dashboard fetch error:", e?.message || e);
     } finally {
       setLoading(false);
       setMounted(true);
@@ -204,8 +219,8 @@ export default function Dashboard() {
 
         unsubRef.current = unsub;
         setIsRealtimeConnected(true);
-      } catch (err) {
-        console.error("Realtime setup failed:", err);
+      } catch (err: any) {
+        console.warn("Realtime setup failed:", err?.message || err);
         setIsRealtimeConnected(false);
         // Retry after 10 seconds
         setTimeout(() => { if (isMounted) setupRealtime(); }, 10000);
@@ -254,8 +269,21 @@ export default function Dashboard() {
   const pendingVerification = filteredVenues.filter(v => !v.isVerified).length;
   const onboardedVenues = filteredVenues.filter(v => v.onboardingComplete).length;
 
-  const totalRevenue = filteredVenues.reduce((sum, v) => {
-    return sum + (PLAN_REVENUE[v.subscriptionPlan] || 0);
+  const filteredPayments = payments.filter(p => {
+    if (timeFilter === "Lifetime") return true;
+    const createdAt = p.paidAt ? new Date(p.paidAt).getTime() : (p.$createdAt ? new Date(p.$createdAt).getTime() : 0);
+    if (timeFilter === "Today") return createdAt >= startOfToday;
+    if (timeFilter === "Weekly") return createdAt >= startOfWeek;
+    if (timeFilter === "Monthly") return createdAt >= startOfMonth;
+    if (timeFilter === "Yearly") return createdAt >= startOfYear;
+    return true;
+  });
+
+  const totalRevenue = filteredPayments.reduce((sum, p) => {
+    if (p.status === 'captured' || p.status === 'paid' || p.status === 'Paid') {
+      return sum + (Number(p.amount) || 0);
+    }
+    return sum;
   }, 0);
 
   const renewalsPending = filteredVenues.filter(v =>
